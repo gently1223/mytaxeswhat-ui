@@ -1,12 +1,9 @@
 from dotenv import load_dotenv
 import os
 from langchain.chat_models import ChatOpenAI
-from langchain.schema import (
-    SystemMessage,
-    HumanMessage,
-    AIMessage
-)
-
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationEntityMemory
+from langchain.memory.prompt import ENTITY_MEMORY_CONVERSATION_TEMPLATE
 
 def main():
     load_dotenv()
@@ -18,26 +15,22 @@ def main():
     else:
         print("API Key set.")
         
-    chat = ChatOpenAI(temperature=0.9)
-    
-    messages = [
-        SystemMessage(content="You are a helpful assistant")
-    ]
+    llm = ChatOpenAI()
+    conversation = ConversationChain(
+        llm=llm,
+        memory=ConversationEntityMemory(llm=llm),
+        prompt=ENTITY_MEMORY_CONVERSATION_TEMPLATE,
+        verbose=True
+    )    
     
     print("Hello, I am ChatGPT CLI!")
     
     while True:
         user_input = input("> ")
         
-        messages.append(HumanMessage(content=user_input))
+        ai_response = conversation.predict(input=user_input)
         
-        ai_response = chat(messages)
-        
-        messages.append(AIMessage(content=ai_response.content))
-        
-        print("\nAssistant:\n", ai_response.content)
-        
-        print("history: ", messages)
+        print("\nAssistant:\n", ai_response)
         
 if __name__ == '__main__':
     main()
