@@ -86,7 +86,7 @@ const linksList = [
     title: "United States Map",
     caption: "Drill Down Map",
     icon: "map",
-    link: "http://localhost:9000/#/map",
+    link: "/#/map",
   },
 ];
 
