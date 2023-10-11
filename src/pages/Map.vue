@@ -27,7 +27,7 @@ export default {
     this.map.on("click", this.handleMapClick);
 
     // Load GeoJSON data for the 48 contiguous states
-    fetch("states.geojson")
+    fetch("us-states.json")
       .then((response) => response.json())
       .then((geojsonData) => {
         // Create a GeoJSON layer and add it to the map
@@ -72,7 +72,7 @@ export default {
   methods: {
     showTooltip(event) {
       const layer = event.target;
-      const tooltipContent = layer.feature.properties.NAME; // Replace with your data source
+      const tooltipContent = layer.feature.properties.NAME;
 
       const tooltip = L.tooltip({
         className: "map-tooltip",
