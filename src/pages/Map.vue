@@ -1,36 +1,130 @@
 <template>
-  <div id="mapContainer"></div>
+  <div id="mapContainer">
+    <!-- Map container element -->
+  </div>
+  <q-dialog v-model="dataFetched">
+    <q-card style="width: 700px; max-width: 80vw">
+      <q-card-section class="q-pt-none">
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Nickame</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.nickname }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Statehood</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.statehood }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Population</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.population }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Capital</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.capital }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Biggest City</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.biggestcity }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>State bird</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.statebird }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>State flower</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.stateflower }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+      </q-card-section>
+
+      <q-card-actions align="right" class="bg-white text-teal">
+        <q-btn flat label="OK" v-close-popup></q-btn>
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet-tilelayer-geojson";
+import api from "../services/api";
 
 export default {
   name: "MapComponent",
   data() {
     return {
       map: null,
-      openTooltip: null,
+      selectedState: null,
+      dataFetched: false,
+      dummyData: null,
     };
   },
   mounted() {
     let geojsonLayer;
-    this.map = L.map("mapContainer").setView([37.8, -96], 5);
+    this.map = L.map("mapContainer", {}).setView([37.8, -96], 5);
     L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
 
-    // Add a click event listener to the map
-    this.map.on("click", this.handleMapClick);
-
-    // Load GeoJSON data for the 48 contiguous states
     fetch("us-states.json")
       .then((response) => response.json())
       .then((geojsonData) => {
-        // Create a GeoJSON layer and add it to the map
         geojsonLayer = L.geoJSON(geojsonData, {
           style: {
             fillColor: "blue",
@@ -39,13 +133,27 @@ export default {
             weight: 1,
           },
           onEachFeature: (feature, layer) => {
-            layer.on("click", () => {
+            layer.on("click", async () => {
               geojsonLayer.resetStyle();
               layer.setStyle({ fillColor: "red" });
+
+              this.dataFetched = false;
+              this.dummyData = null;
+
+              try {
+                const response = await api.fetchData(
+                  this.selectedState._content
+                );
+                this.dummyData = response.data;
+                console.log("State Information: ", this.dummyData.nickname);
+                this.dataFetched = true;
+              } catch (error) {
+                console.error(error);
+              }
             });
             layer.on("mouseover", (event) => {
-              if (this.openTooltip) {
-                this.map.closeTooltip(this.openTooltip);
+              if (this.selectedState) {
+                this.map.closeTooltip(this.selectedState);
               }
 
               this.showTooltip(event);
@@ -58,11 +166,6 @@ export default {
       .catch((error) => {
         console.error("Error loading GeoJSON data:", error);
       });
-
-    // TODO: mock out backend calls that would retrieve some dummy data about the selected state
-
-    // // Add a click event listener to the map
-    // this.map.on("click", this.handleMapClick);
   },
   onBeforeUnmount() {
     if (this.map) {
@@ -72,31 +175,25 @@ export default {
   methods: {
     showTooltip(event) {
       const layer = event.target;
-      const tooltipContent = layer.feature.properties.NAME;
+      const tooltipContent = layer.feature.properties.name;
 
-      const tooltip = L.tooltip({
+      if (this.selectedState) {
+        this.hideTooltip();
+      }
+
+      this.selectedState = L.tooltip({
         className: "map-tooltip",
-      }).setContent(tooltipContent);
-
-      // Show the tooltip at the mouse pointer's position
-      tooltip.setLatLng(event.latlng).openOn(this.map);
-
-      this.openTooltip = tooltip;
+      })
+        .setContent(tooltipContent)
+        .setLatLng(event.latlng)
+        .openOn(this.map);
     },
 
     hideTooltip() {
-      if (this.openTooltip) {
-        this.map.closeTooltip(this.openTooltip);
-        this.openTooltip = null;
+      if (this.selectedState) {
+        this.map.closeTooltip(this.selectedState);
+        this.selectedState = null;
       }
-    },
-    handleMapClick(event) {
-      // TODO: mock out backend calls that would retrieve some dummy data about the selected state
-
-      const { lat, lng } = event.latlng;
-      // You can now fetch additional data or load new map layers based on the click coordinates
-      // Example: Fetch data or load a new layer for the clicked location
-      // You can use Vue methods or Vuex to manage data and state
     },
   },
 };
@@ -107,7 +204,6 @@ export default {
   width: 100%;
   height: calc(100vh - 50px);
 }
-/* CSS class for custom tooltips */
 .map-tooltip {
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
