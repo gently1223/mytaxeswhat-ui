@@ -410,6 +410,16 @@ export const statesData = {
     statebird: "Carolina wren",
     stateflower: "yellow jessamine",
   },
+  SouthDakota: {
+    nickname: "The Mount Rushmore State",
+    statehood: "1889; 40th state",
+    population: 858469,
+    capital: "Pierre",
+    biggestcity: "Sioux Falls",
+    abbreviation: "SD",
+    statebird: "Ring-necked pheasant",
+    stateflower: "Pasque flower",
+  },
   Tennessee: {
     nickname: "The Volunteer State",
     statehood: "1796; 16th state",

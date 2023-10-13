@@ -2,10 +2,17 @@
   <div id="mapContainer">
     <!-- Map container element -->
   </div>
-  <q-dialog v-model="dataFetched">
-    <q-card style="width: 700px; max-width: 80vw">
-      <q-card-section class="q-pt-none">
-        <q-list>
+  <q-drawer
+    side="right"
+    v-model="dataFetched"
+    bordered
+    :width="300"
+    :breakpoint="500"
+    :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-3'"
+  >
+    <q-scroll-area class="fit">
+      <div class="q-pa-sm">
+        <q-list v-if="this.dummyData">
           <q-item>
             <q-item-section>
               <q-item-label>Nickame</q-item-label>
@@ -17,7 +24,7 @@
           </q-item>
         </q-list>
         <q-separator />
-        <q-list>
+        <q-list v-if="this.dummyData">
           <q-item>
             <q-item-section>
               <q-item-label>Statehood</q-item-label>
@@ -29,7 +36,7 @@
           </q-item>
         </q-list>
         <q-separator />
-        <q-list>
+        <q-list v-if="this.dummyData">
           <q-item>
             <q-item-section>
               <q-item-label>Population</q-item-label>
@@ -41,7 +48,7 @@
           </q-item>
         </q-list>
         <q-separator />
-        <q-list>
+        <q-list v-if="this.dummyData">
           <q-item>
             <q-item-section>
               <q-item-label>Capital</q-item-label>
@@ -53,7 +60,7 @@
           </q-item>
         </q-list>
         <q-separator />
-        <q-list>
+        <q-list v-if="this.dummyData">
           <q-item>
             <q-item-section>
               <q-item-label>Biggest City</q-item-label>
@@ -65,7 +72,7 @@
           </q-item>
         </q-list>
         <q-separator />
-        <q-list>
+        <q-list v-if="this.dummyData">
           <q-item>
             <q-item-section>
               <q-item-label>State bird</q-item-label>
@@ -77,7 +84,7 @@
           </q-item>
         </q-list>
         <q-separator />
-        <q-list>
+        <q-list v-if="this.dummyData">
           <q-item>
             <q-item-section>
               <q-item-label>State flower</q-item-label>
@@ -88,14 +95,9 @@
             </q-item-section>
           </q-item>
         </q-list>
-        <q-separator />
-      </q-card-section>
-
-      <q-card-actions align="right" class="bg-white text-teal">
-        <q-btn flat label="OK" v-close-popup></q-btn>
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+      </div>
+    </q-scroll-area>
+  </q-drawer>
 </template>
 
 <script>
