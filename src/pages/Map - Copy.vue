@@ -1,9 +1,6 @@
 <template>
-  <div v-if="$q.platform.is.desktop" id="desktopMap">
-    <!-- Desktop Map container element -->
-  </div>
-  <div v-if="$q.platform.is.mobile" id="mobileMap">
-    <!-- Mobile Map container element -->
+  <div id="mapContainer">
+    <!-- Map container element -->
   </div>
   <q-drawer
     side="right"
@@ -104,7 +101,6 @@
 </template>
 
 <script>
-import { useQuasar } from "quasar";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet-tilelayer-geojson";
@@ -115,50 +111,28 @@ export default {
   data() {
     return {
       map: null,
-      mobileMap: null,
       selectedState: null,
       dataFetched: false,
       dummyData: null,
-      geojsonLayer: null,
     };
   },
-  setup() {
-    const $q = useQuasar();
-  },
   mounted() {
-    if (this.$q.platform.is.desktop == true) {
-      this.map = L.map("desktopMap", { minZoom: 4 }).setView([37.8, -96], 5);
-    } else {
-      console.log("This is mobile");
-      this.map = L.map("mobileMap").setView([37.8, -96], 3);
-    }
-    var map = this.map;
+    let geojsonLayer;
+    this.map = L.map("mapContainer", { minZoom: 4 }).setView([37.8, -96], 5);
     L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
+    }).addTo(this.map);
 
-    var southWest = L.latLng(18.396308, -165.0); // Southwest corner of the United States
-    var northEast = L.latLng(70.345786, -54.93457); // Northeast corner of the United States
+    var southWest = L.latLng(23.396308, -146.0); // Southwest corner of the United States
+    var northEast = L.latLng(56.345786, -60.93457); // Northeast corner of the United States
     var bounds = L.latLngBounds(southWest, northEast);
 
-    map.setMaxBounds(bounds);
+    this.map.setMaxBounds(bounds);
+    this.map.on("drag", function () {
+      this.map.panInsideBounds(bounds, { animate: false });
+    });
 
-    if (this.$q.platform.is.desktop == true) {
-      map.on("zoomend", function () {
-        if (map.getZoom() < 5) {
-          map.setView([46.5, -121], 4);
-        }
-      });
-    } else {
-      map.on("zoomend", function () {
-        if (map.getZoom() < 4) {
-          map.setView([46.5, -121], 3);
-        }
-      });
-    }
-
-    let geojsonLayer;
     fetch("us-states.json")
       .then((response) => response.json())
       .then((geojsonData) => {
@@ -170,17 +144,17 @@ export default {
             weight: 1,
           },
           onEachFeature: (feature, layer) => {
-            let tooltip;
             layer.on("click", async () => {
               geojsonLayer.resetStyle();
               layer.setStyle({ fillColor: "red" });
+
               this.dataFetched = false;
               this.dummyData = null;
+
               try {
-                const stateInfo = feature.properties;
-                console.log("Selected State Information: ", stateInfo.name);
-                this.selectedState = stateInfo.name;
-                const response = await api.fetchData(stateInfo.name);
+                const response = await api.fetchData(
+                  this.selectedState._content
+                );
                 this.dummyData = response.data;
                 console.log("State Information: ", this.dummyData.nickname);
                 this.dataFetched = true;
@@ -188,37 +162,58 @@ export default {
                 console.error(error);
               }
             });
+            layer.on("mouseover", (event) => {
+              if (this.selectedState) {
+                this.map.closeTooltip(this.selectedState);
+              }
+
+              this.showTooltip(event);
+            });
+
+            layer.on("mouseout", this.hideTooltip);
           },
         }).addTo(this.map);
       })
       .catch((error) => {
         console.error("Error loading GeoJSON data:", error);
       });
-
-    console.log(">>> map: ", this.map);
   },
-
   onBeforeUnmount() {
     if (this.map) {
       this.map.remove();
     }
   },
+  methods: {
+    showTooltip(event) {
+      const layer = event.target;
+      const tooltipContent = layer.feature.properties.name;
+
+      if (this.selectedState) {
+        this.hideTooltip();
+      }
+
+      this.selectedState = L.tooltip({
+        className: "map-tooltip",
+      })
+        .setContent(tooltipContent)
+        .setLatLng(event.latlng)
+        .openOn(this.map);
+    },
+
+    hideTooltip() {
+      if (this.selectedState) {
+        this.map.closeTooltip(this.selectedState);
+        this.selectedState = null;
+      }
+    },
+  },
 };
 </script>
 
 <style scoped>
-#desktopMap {
+#mapContainer {
   width: 100%;
   height: calc(100vh - 50px);
-}
-
-#mobileMap {
-  width: 100%;
-  height: calc(400px);
-  position: absolute;
-  top: 50%;
-  -ms-transform: translateY(-50%);
-  transform: translateY(-50%);
 }
 .map-tooltip {
   background-color: rgba(0, 0, 0, 0.8);
