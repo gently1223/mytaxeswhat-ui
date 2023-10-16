@@ -118,11 +118,20 @@ export default {
   },
   mounted() {
     let geojsonLayer;
-    this.map = L.map("mapContainer", {}).setView([37.8, -96], 5);
+    this.map = L.map("mapContainer", { minZoom: 4 }).setView([37.8, -96], 5);
     L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
+
+    var southWest = L.latLng(23.396308, -146.0); // Southwest corner of the United States
+    var northEast = L.latLng(56.345786, -60.93457); // Northeast corner of the United States
+    var bounds = L.latLngBounds(southWest, northEast);
+
+    this.map.setMaxBounds(bounds);
+    this.map.on("drag", function () {
+      this.map.panInsideBounds(bounds, { animate: false });
+    });
 
     fetch("us-states.json")
       .then((response) => response.json())
