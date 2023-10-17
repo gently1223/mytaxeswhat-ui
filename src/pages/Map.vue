@@ -1,8 +1,8 @@
 <template>
-  <div v-if="isDesktop" id="desktopMap">
+  <div id="desktopMap">
     <!-- Desktop Map container element -->
   </div>
-  <div v-if="isMobile" id="mobileMap">
+  <div id="mobileMap">
     <!-- Mobile Map container element -->
   </div>
   <q-drawer
@@ -27,14 +27,84 @@
           </q-item>
         </q-list>
         <q-separator />
-        <!-- Repeat for other data fields -->
+        <q-list v-if="this.dummyData">
+          <q-item>
+            <q-item-section>
+              <q-item-label>Statehood</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.statehood }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list v-if="this.dummyData">
+          <q-item>
+            <q-item-section>
+              <q-item-label>Population</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.population }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list v-if="this.dummyData">
+          <q-item>
+            <q-item-section>
+              <q-item-label>Capital</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.capital }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list v-if="this.dummyData">
+          <q-item>
+            <q-item-section>
+              <q-item-label>Biggest City</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.biggestcity }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list v-if="this.dummyData">
+          <q-item>
+            <q-item-section>
+              <q-item-label>State bird</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.statebird }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <q-separator />
+        <q-list v-if="this.dummyData">
+          <q-item>
+            <q-item-section>
+              <q-item-label>State flower</q-item-label>
+            </q-item-section>
+
+            <q-item-section side>
+              <q-item-label>{{ this.dummyData.stateflower }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
       </div>
     </q-scroll-area>
   </q-drawer>
 </template>
 
 <script>
-import { ref, watchEffect, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from "vue";
 import { useQuasar } from "quasar";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -68,10 +138,33 @@ export default {
         map.value = L.map("mobileMap").setView([37.8, -96], 3);
         isMobile.value = true;
       }
+
+      L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map.value);
+
+      var southWest = L.latLng(18.396308, -165.0); // Southwest corner of the United States
+      var northEast = L.latLng(70.345786, -54.93457); // Northeast corner of the United States
+      var bounds = L.latLngBounds(southWest, northEast);
+
+      map.value.setMaxBounds(bounds);
+
+      if ($q.platform.is.desktop == true) {
+        map.value.on("zoomend", function () {
+          if (map.value.getZoom() < 5) {
+            map.value.setView([46.5, -121], 4);
+          }
+        });
+      } else {
+        map.value.on("zoomend", function () {
+          if (map.value.getZoom() < 4) {
+            map.value.setView([46.5, -121], 3);
+          }
+        });
+      }
+
       const leafletMap = map.value;
-
-      // Rest of your code here...
-
       fetch("us-states.json")
         .then((response) => response.json())
         .then((geojsonData) => {
@@ -107,14 +200,12 @@ export default {
         .catch((error) => {
           console.error("Error loading GeoJSON data:", error);
         });
-
-      console.log(">>> map: ", leafletMap);
     });
 
     onBeforeUnmount(() => {
-      if (map.value) {
-        map.value.remove();
-      }
+      // if (map.value) {
+      //   map.value.remove();
+      // }
     });
 
     return {
