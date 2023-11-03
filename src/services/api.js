@@ -2,8 +2,6 @@ import { statesData } from "../../public/mockData";
 
 export default {
   fetchData: async (selectedState) => {
-    selectedState = selectedState.split(" ").join("");
-
     // Simulate a delay to mimic network latency
     await new Promise((resolve) => setTimeout(resolve, 1000));
     // Mock data retrieval based on the selected state
