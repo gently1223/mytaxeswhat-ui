@@ -8,6 +8,7 @@
   <q-dialog
     v-model="dataFetched"
     :transition-duration="0"
+    fullscreen
     @hide="onDialogClose"
   >
     <q-card>
@@ -148,13 +149,12 @@ export default {
         interactingMap.removeChild(interactingMap.firstChild);
       }
     };
-
     var config = {
       width: 392,
       height: 400,
       padding: 0,
       projection: d3.geoMercator(),
-      duration: 1000,
+      duration: 2000,
       key: function (d) {
         return d.properties.short;
       },
@@ -213,6 +213,10 @@ export default {
         pc: { x: 0, y: 0 },
       },
     };
+
+    if ($q.platform.is.mobile) {
+      config.width = $q.screen.width - 40;
+    }
 
     onMounted(() => {
       if ($q.platform.is.desktop == true) {
@@ -275,7 +279,7 @@ export default {
                   console.log("State Information: ", dummyData.value.name);
                   setTimeout(() => {
                     dataFetched.value = true;
-                  }, 800);
+                  }, 1800);
                 } catch (error) {
                   console.error(error);
                 }
@@ -288,7 +292,8 @@ export default {
                 const svg = d3
                   .select("#interactingMap")
                   .append("svg")
-                  .style("fill", "blue")
+                  .style("fill", "none")
+                  .style("stroke", "black")
                   .attr("width", config.width)
                   .attr("height", config.height);
 
@@ -324,13 +329,20 @@ export default {
                       },
                     ],
                   };
+                  console.log("transformedData", transformedData);
+
+                  let b = turf.bbox(features);
+
+                  let geoCoordinate = [
+                    (b[2] - b[0]) / 2 + b[0],
+                    (b[1] - b[3]) / 2 + b[3],
+                  ];
 
                   var geojson = geo2rect.compute(transformedData);
 
                   g2r.config = config;
                   g2r.data = geojson;
                   g2r.svg = svg.append("g");
-
                   g2r.draw();
                   // TO React Type
                   g2r.toggle();

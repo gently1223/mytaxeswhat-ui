@@ -9,7 +9,6 @@
 
   function compute(data) {
     //TODO: check if data is in a valid format
-    console.log("DATA", data);
     data.features.forEach(function (d, di) {
       //Preserve original coordinates
       d.geometry["ocoordinates"] = d.geometry.coordinates;
@@ -28,6 +27,7 @@
       }
 
       var b = turf.bbox(d);
+
       d.geometry["centroid"] = [
         (b[2] - b[0]) / 2 + b[0],
         (b[1] - b[3]) / 2 + b[3],
@@ -429,14 +429,6 @@
             (function () {
               var init_zoom = 200;
 
-              console.log(
-                "_this2._datafsdfsdfsdfsdfdsf",
-                d3.geoCentroid(_this2._data)
-              );
-              console.log(
-                "_this2._config",
-                _this2._config.projection.center(d3.geoCentroid(_this2._data))
-              );
               _this2._config.projection
                 .center(d3.geoCentroid(_this2._data))
                 .scale(init_zoom)
@@ -489,15 +481,15 @@
         key: "draw",
         value: function draw() {
           var _this3 = this;
-          console.log("this._init", this._init);
+
           if (this._init) {
             (function () {
               var _this = _this3;
-              console.log("_this", _this);
+
               var tPath = _this3._svg
                 .selectAll("path")
                 .data(_this3._data.features);
-              console.log("tPath", tPath);
+
               tPath.exit();
               tPath
                 .enter()
@@ -506,7 +498,6 @@
                   return "id-" + _this.config.key(d);
                 });
 
-              console.log("_this.mode", _this3._config);
               _this3._svg
                 .selectAll("path")
                 .transition()
@@ -517,7 +508,7 @@
                     ty = 0;
                   if (_this.mode != "geo") {
                     var g = _this.config.grid[_this.config.key(d)];
-                    console.log("gggggggggg", g);
+
                     var pc = _this.config.projection(d.geometry.centroid);
                     tx = g.ox - pc[0];
                     ty = g.oy - pc[1];
