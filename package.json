@@ -15,17 +15,13 @@
   "dependencies": {
     "@aws-amplify/ui-vue": "^3.1.28",
     "@quasar/extras": "^1.16.4",
-    "@turf/turf": "^6.5.0",
     "aws-amplify": "^5.3.11",
     "axios": "^1.2.1",
-    "d3": "^7.8.5",
-    "flubber": "^0.4.2",
-    "framer-motion": "^10.16.4",
+    "gsap-trial": "^3.12.2",
     "leaflet-tilelayer-geojson": "^1.0.4",
     "leaflet-tooltip": "^1.0.4",
     "pinia": "^2.0.11",
     "quasar": "^2.6.0",
-    "turf": "^3.0.14",
     "vue": "^3.0.0",
     "vue-i18n": "^9.0.0",
     "vue-router": "^4.0.0"

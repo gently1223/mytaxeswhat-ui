@@ -1,26 +1,140 @@
 <template>
-  <div class="container">
-    <div id="interactingMap"></div>
-    <div id="desktopMap"></div>
-    <div id="mobileMap"></div>
-  </div>
-
+  <div id="desktopMap" v-if="$q.platform.is.desktop"></div>
+  <div id="mobileMap" v-if="$q.platform.is.mobile"></div>
+  <path
+    id="rectangle"
+    d="M479.5 138.5 L869.5 138.5 L869.5 763.5 L479.5 763.5 Z"
+  />
   <q-dialog
+    v-if="$q.platform.is.mobile"
     v-model="dataFetched"
     :transition-duration="0"
     fullscreen
+    maximized
     @hide="onDialogClose"
   >
     <q-card>
       <q-card-section>
-        <div class="text-h6">{{ this.dummyData.name }}</div>
+        <div v-if="this.dummyData" class="text-h6">
+          {{ this.dummyData.name }}
+        </div>
       </q-card-section>
 
       <q-separator />
 
       <q-card-section>
-        <q-scroll-area style="height: 50vh; width: 360px">
-          <q-list v-if="dummyData">
+        <q-scroll-area style="height: 450px; width: 360px">
+          <q-list v-if="this.dummyData">
+            <q-item>
+              <q-item-section>
+                <q-item-label>Nickname</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label>{{ this.dummyData.nickname }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="this.dummyData">
+            <q-item>
+              <q-item-section>
+                <q-item-label>Statehood</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label>{{ this.dummyData.statehood }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="this.dummyData">
+            <q-item>
+              <q-item-section>
+                <q-item-label>Population</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label>{{ this.dummyData.population }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="this.dummyData">
+            <q-item>
+              <q-item-section>
+                <q-item-label>Capital</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label>{{ this.dummyData.capital }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="this.dummyData">
+            <q-item>
+              <q-item-section>
+                <q-item-label>Biggest City</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label>{{ this.dummyData.biggestcity }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="this.dummyData">
+            <q-item>
+              <q-item-section>
+                <q-item-label>State bird</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label>{{ this.dummyData.statebird }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-list v-if="this.dummyData">
+            <q-item>
+              <q-item-section>
+                <q-item-label>State flower</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label>{{ this.dummyData.stateflower }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-scroll-area>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-actions align="right">
+        <q-btn flat label="OK" color="primary" v-close-popup />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+  <q-dialog
+    v-model="dataFetched"
+    :transition-duration="0"
+    v-if="$q.platform.is.desktop"
+    @hide="onDialogClose"
+  >
+    <q-card>
+      <q-card-section>
+        <div v-if="this.dummyData" class="text-h6">
+          {{ this.dummyData.name }}
+        </div>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-section>
+        <q-scroll-area style="height: 450px; width: 360px">
+          <q-list v-if="this.dummyData">
             <q-item>
               <q-item-section>
                 <q-item-label>Nickname</q-item-label>
@@ -116,14 +230,17 @@
 </template>
 
 <script>
-import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount } from "vue";
 import { useQuasar } from "quasar";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet-tilelayer-geojson";
 import api from "../services/api";
-import * as d3 from "d3";
-import square from "@turf/square";
+import gsap from "gsap-trial";
+import MorphSVGPlugin from "gsap-trial/MorphSVGPlugin";
+import { whileStatement } from "@babel/types";
+gsap.registerPlugin(MorphSVGPlugin);
+gsap.config({ trialWarn: false });
 
 export default {
   name: "MapComponent",
@@ -137,6 +254,7 @@ export default {
       "bg-grey-9": $q.dark.isActive,
       "bg-grey-3": !$q.dark.isActive,
     }));
+    var selectedId;
 
     const selectedState = ref(null);
 
@@ -144,79 +262,14 @@ export default {
     const geojsonLayer = ref(null);
 
     const onDialogClose = () => {
-      const interactingMap = document.getElementById("interactingMap");
-      while (interactingMap.firstChild) {
-        interactingMap.removeChild(interactingMap.firstChild);
-      }
-    };
-    var config = {
-      width: 392,
-      height: 400,
-      padding: 0,
-      projection: d3.geoMercator(),
-      duration: 2000,
-      key: function (d) {
-        return d.properties.short;
-      },
-      grid: {
-        alaska: { x: 0, y: 0 },
-        maine: { x: 0, y: 0 },
-        vt: { x: 0, y: 0 },
-        nh: { x: 0, y: 0 },
-        wash: { x: 0, y: 0 },
-        idaho: { x: 0, y: 0 },
-        mont: { x: 0, y: 0 },
-        nd: { x: 0, y: 0 },
-        minn: { x: 0, y: 0 },
-        ill: { x: 0, y: 0 },
-        wis: { x: 0, y: 0 },
-        mich: { x: 0, y: 0 },
-        ny: { x: 0, y: 0 },
-        ri: { x: 0, y: 0 },
-        mass: { x: 0, y: 0 },
-        ore: { x: 0, y: 0 },
-        nev: { x: 0, y: 0 },
-        wyo: { x: 0, y: 0 },
-        sd: { x: 0, y: 0 },
-        iowa: { x: 0, y: 0 },
-        ind: { x: 0, y: 0 },
-        ohio: { x: 0, y: 0 },
-        pa: { x: 0, y: 0 },
-        nj: { x: 0, y: 0 },
-        conn: { x: 0, y: 0 },
-        calif: { x: 0, y: 0 },
-        utah: { x: 0, y: 0 },
-        colo: { x: 0, y: 0 },
-        neb: { x: 0, y: 0 },
-        mo: { x: 0, y: 0 },
-        ky: { x: 0, y: 0 },
-        wva: { x: 0, y: 0 },
-        va: { x: 0, y: 0 },
-        md: { x: 0, y: 0 },
-        del: { x: 0, y: 0 },
-        ariz: { x: 0, y: 0 },
-        nm: { x: 0, y: 0 },
-        kan: { x: 0, y: 0 },
-        ark: { x: 0, y: 0 },
-        tenn: { x: 0, y: 0 },
-        nc: { x: 0, y: 0 },
-        sc: { x: 0, y: 0 },
-        dc: { x: 0, y: 0 },
-        okla: { x: 0, y: 0 },
-        la: { x: 0, y: 0 },
-        miss: { x: 0, y: 0 },
-        ala: { x: 0, y: 0 },
-        ga: { x: 0, y: 0 },
-        hawaii: { x: 0, y: 0 },
-        texas: { x: 0, y: 0 },
-        fla: { x: 0, y: 0 },
-        pc: { x: 0, y: 0 },
-      },
-    };
+      var morph2 = gsap.to(selectedId, {
+        duration: 1,
+        morphSVG: selectedId,
+        paused: true,
+      });
 
-    if ($q.platform.is.mobile) {
-      config.width = $q.screen.width - 40;
-    }
+      morph2.play();
+    };
 
     onMounted(() => {
       if ($q.platform.is.desktop == true) {
@@ -248,6 +301,7 @@ export default {
           }
         });
       }
+
       const leafletMap = map.value;
       fetch("us.geojson")
         .then((response) => response.json())
@@ -260,95 +314,114 @@ export default {
               weight: 0.3,
             },
             onEachFeature: (feature, layer) => {
-              layer.on("click", async () => {
+              layer.on("click", async (event) => {
+                let ele = event.target.getElement();
+
+                ele.setAttribute("id", feature.properties.short);
+
+                // Calculate the position and size of target svg in screen
+                const svg = document.querySelector("svg");
+                console.log("svg", svg);
+                const transformStyle = window
+                  .getComputedStyle(svg)
+                  .getPropertyValue("transform");
+                console.log("transformstyle", transformStyle);
+                const transformValues = transformStyle.match(
+                  /matrix\(([^,]+), ([^,]+), ([^,]+), ([^,]+), ([^,]+), ([^)]+)\)/
+                );
+                let translateX;
+                let translateY;
+                if (transformValues && transformValues.length === 7) {
+                  translateX = parseFloat(transformValues[5]);
+                  translateY = parseFloat(transformValues[6]);
+
+                  console.log(
+                    `TranslateX: ${translateX}, TranslateY: ${translateY}`
+                  );
+                } else {
+                  console.log(
+                    "Matrix values not found or in the expected format."
+                  );
+                }
+
+                //
+                const viewBoxStyle = svg.getAttribute("viewBox");
+                console.log("viewBox", viewBoxStyle);
+                const viewBoxValues = viewBoxStyle
+                  .split(" ")
+                  .map((value) => parseInt(value, 10));
+
+                if (viewBoxValues.length === 4) {
+                  const value1 = viewBoxValues[0];
+                  const value2 = viewBoxValues[1];
+                  const value3 = viewBoxValues[2];
+                  const value4 = viewBoxValues[3];
+
+                  console.log(`Value 1: ${value1}`);
+                  console.log(`Value 2: ${value2}`);
+                  console.log(`Value 3: ${value3}`);
+                  console.log(`Value 4: ${value4}`);
+                } else {
+                  console.log("Input string does not contain four values.");
+                }
+
+                const diffScreenX = ((2304 - viewBoxValues[2]) / 2304) * 194.5;
+                const diffScreenY = ((1141 - viewBoxValues[3]) / 1141) * 106;
+
+                console.log("diffScreenX", diffScreenX);
+
+                const diffX = translateX + 139;
+                const diffY = translateY + 86;
+
+                const path = document.getElementById("rectangle");
+
+                const pathWidth = 390;
+                const pathHeight = 596;
+                if ($q.screen.height <= 648) {
+                  pathHeight = $q.screen.height - 48;
+                }
+                let centerX = ($q.screen.width - pathWidth) / 2 + 53;
+                let centerY = ($q.screen.height - pathHeight) / 2 - 40;
+                centerX = centerX + diffX - diffScreenX;
+                centerY = centerY + diffY - diffScreenY;
+
+                const pathData = `M${centerX} ${centerY} L${
+                  centerX + pathWidth
+                } ${centerY} L${centerX + pathWidth} ${
+                  centerY + pathHeight
+                } L${centerX} ${centerY + pathHeight} Z`;
+                // TODO: GSAP animation Add
+                selectedId = "#" + feature.properties.short;
+
+                var morph1 = gsap.to(selectedId, {
+                  duration: 1,
+                  morphSVG: {
+                    shape: pathData,
+                  },
+                });
+
+                morph1.play();
+
                 geojsonLayer.value.resetStyle();
-                layer.setStyle({ fillOpacity: 0, color: "red", weight: 3 });
-                dataFetched.value = false;
+                layer.setStyle({
+                  fillOpacity: 1,
+                  fillColor: "white",
+                  color: "black",
+                  weight: 1,
+                });
                 dummyData.value = null;
                 try {
                   const stateInfo = feature.properties;
-                  console.log(
-                    "Selected State Information: ",
-                    stateInfo.STATE_NAME
-                  );
                   selectedState.value = stateInfo.STATE_NAME;
                   selectedState.value = selectedState.value.split(" ").join("");
-                  console.log("selectedState", selectedState.value);
                   const response = await api.fetchData(selectedState.value);
                   dummyData.value = response.data;
-                  console.log("State Information: ", dummyData.value.name);
                   setTimeout(() => {
                     dataFetched.value = true;
-                  }, 1800);
+                  }, 1000);
                 } catch (error) {
                   console.error(error);
                 }
-
-                const interactingMap =
-                  document.getElementById("interactingMap");
-                while (interactingMap.firstChild) {
-                  interactingMap.removeChild(interactingMap.firstChild);
-                }
-                const svg = d3
-                  .select("#interactingMap")
-                  .append("svg")
-                  .style("fill", "none")
-                  .style("stroke", "black")
-                  .attr("width", config.width)
-                  .attr("height", config.height);
-
-                var g2r = new geo2rect.draw();
-
-                const geojsonPath = "us.geojson?timestamp=" + Date.now();
-                d3.json(geojsonPath).then(function (data) {
-                  function getStateFeatures(stateName) {
-                    return data.features.find(
-                      (feature) =>
-                        feature.properties.STATE_NAME.split(" ")
-                          .join("")
-                          .toLowerCase() === stateName.toLowerCase()
-                    );
-                  }
-
-                  console.log("selectedState.value", selectedState.value);
-                  const features = getStateFeatures(selectedState.value);
-
-                  console.log("features", features);
-
-                  const transformedData = {
-                    type: "FeatureCollection",
-                    crs: {
-                      type: "name",
-                      properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" },
-                    },
-                    features: [
-                      {
-                        type: "Feature",
-                        properties: features.properties,
-                        geometry: features.geometry,
-                      },
-                    ],
-                  };
-                  console.log("transformedData", transformedData);
-
-                  let b = turf.bbox(features);
-
-                  let geoCoordinate = [
-                    (b[2] - b[0]) / 2 + b[0],
-                    (b[1] - b[3]) / 2 + b[3],
-                  ];
-
-                  var geojson = geo2rect.compute(transformedData);
-
-                  g2r.config = config;
-                  g2r.data = geojson;
-                  g2r.svg = svg.append("g");
-                  g2r.draw();
-                  // TO React Type
-                  g2r.toggle();
-                  g2r.draw();
-                  console.log(g2r.mode);
-                });
               });
             },
           }).addTo(leafletMap);
@@ -378,28 +451,14 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  position: relative;
-  width: 100%;
-  height: calc(100vh - 50px);
-}
-#interactingMap {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 999;
-}
 #desktopMap {
   width: 100%;
   height: calc(100vh - 50px);
-  position: absolute;
 }
 
 #mobileMap {
   width: 100%;
   height: calc(400px);
-  position: absolute;
   top: 50%;
   -ms-transform: translateY(-50%);
   transform: translateY(-50%);
